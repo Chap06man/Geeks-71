@@ -19,3 +19,8 @@ inline_buttons = InlineKeyboardMarkup(inline_keyboard=[
 inline_buttons2 = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Начать занова', callback_data='restart_start')]
 ])
+
+update_delete_button_inline = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Удалить', callback_data='delete_user')],
+    [InlineKeyboardButton(text='Изменить', callback_data='update_user')]
+])

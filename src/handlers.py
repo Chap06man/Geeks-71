@@ -2,18 +2,26 @@ from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
+from db.users import create_user, update_user, delete_user
 
-from src.state import Quiz
+from src.state import Quiz , UpdateUser
 from src.questions import QUESTIONS
-from src.keyboards import reply_buttons, inline_buttons,inline_buttons2
+from src.keyboards import reply_buttons, inline_buttons,inline_buttons2,update_delete_button_inline
 
 router = Router()
 
 @router.message(CommandStart())
 async def command_start(message: Message):
+    user = create_user(
+        telegram_id = message.from_user.id,
+        username = message.from_user.username or 'Null'
+    )
     await message.answer(
-        f"Привет, {message.from_user.full_name}! Я твой бот!",
-        reply_markup=reply_buttons
+        f"Привет, {message.from_user.full_name}! Я твой бот!\n"
+        f"Твой резултать с SQLа - \n {user} \n"
+        f'Вы так же сможете изменить имя ползователя или удалить ',
+        #reply_markup=reply_buttons,
+        reply_markup=update_delete_button_inline
     )
     print(f"Пользователь {message.from_user.full_name} написал /start!")
 
@@ -79,6 +87,32 @@ async def handle_answer(message: Message, state: FSMContext):
         await state.update_data(index=index, score=score)
         await message.answer(f"Вопрос {index + 1}: {QUESTIONS[index]['q']}")
 
+# ---------------------------------------------------------homework-5
+@router.callback_query(F.data == 'delete_user')
+async def delete_user_handler(callback: CallbackQuery):    
+    delete_user(
+        telegram_id=callback.from_user.id
+    )
+
+    await callback.answer('Удалено!', show_alert=True)
+    await callback.message.answer('Вы удалили пользователя')
+
+@router.callback_query(F.data == 'update_user')
+async def update_user_handler(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(UpdateUser.username)
+    await callback.message.answer('Напишите новое имя пользователя:')
+    await callback.answer()
+
+@router.message(UpdateUser.username)
+async def update_username_handler(message: Message, state: FSMContext):
+    update_user(
+        username=message.text,
+        telegram_id=message.from_user.id
+    )
+
+    await state.clear()
+    await message.answer('Имя пользователя успешно изменено!\n'
+                         f'Теперь ваша имя - {message.text}!')
 
 @router.message()
 async def echo(message: Message):

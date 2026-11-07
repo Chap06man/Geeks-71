@@ -1,18 +1,15 @@
 # Виртуальное окружение
 venv/
 .venv/
-
 # Кэш Python
 __pycache__/
 *.pyc
-
 # Секретные данные
 .env
-
 # Настройки редактора
 .vscode/
-
 # Системные файлы
 .DS_Store
-
 requirements.txt
+.env_example
+db/quiz.db
