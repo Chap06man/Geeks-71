@@ -32,3 +32,17 @@ CREATE_USER_BY_TG_ID = 'SELECT * FROM users WHERE telegram_id = ?'
 INSERT_USER = 'INSERT OR IGNORE INTO users (telegram_id, username) VALUES (?, ?)'
 UPDATE_USER = 'UPDATE users SET username = ? WHERE telegram_id = ?'
 DELETE_USER = 'DELETE FROM users WHERE telegram_id = ?'
+
+#Вопросы 
+GET_ALL_QUESTIONS = 'SELECT * FROM questions'
+GET_QUESTION_BY_ID = 'SELECT * FROM questions WHERE = ?'
+INSERT_QUESTIONS  = 'INSERT INTO questions (question_text, correct_answer) VALUES(?, ?)'
+UPDATE_QUESTIONS = 'UPDATE questions SET question_text = ?, correct_answer = ?, WHERE  id = ?'
+DELETE_QUESTIONS = 'DELETE FROM questions WHERE id = ?'
+
+#Резултаты 
+INSERT_RESULT = 'INSERT INTO results (user_id, question_id, is_correct) VALUES (?, ?, ?)'
+GET_RESULT_BY_ID = 'SELECT * FROM results WHERE id = ?'
+GET_SCORE_BY_USER_ID = "SELECT COUNT(*) as total, SUM(is_correct) as correct FROM results WHERE user_id = ?"
+UPDATE_RESULT = 'UPDATE results SET is_correct = ? WHERE id = ?'
+DELETE_RESULT = 'DELETE FROM results WHERE id = ?'

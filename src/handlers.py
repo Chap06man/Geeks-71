@@ -2,12 +2,12 @@ from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
-from db.users import create_user, update_user, delete_user
+from db.users import get_user,create_user, update_user, delete_user
+from db.results import save_result
+from db.questions import get_all_questions
 
 from src.state import Quiz , UpdateUser
-from src.questions import QUESTIONS
-from src.keyboards import reply_buttons, inline_buttons,inline_buttons2,update_delete_button_inline
-
+from src.keyboards import inline_buttons,inline_buttons2,update_delete_button_inline
 router = Router()
 
 @router.message(CommandStart())
@@ -52,40 +52,56 @@ async def cmd_group(message: Message):
 
 @router.callback_query(F.data == "quiz_start")
 async def quiz_start(callback: CallbackQuery, state: FSMContext):
+    questions = get_all_questions()
+    if not questions:
+        await callback.answer('Вопросов в базе данных нету!')
     await callback.answer('Начинаем игру!', show_alert=True)
-    await state.update_data(index=0, score=0)       # сохраняем прогресс
+    await state.update_data(questions=questions,index=0, score=0)       # сохраняем прогресс
     await state.set_state(Quiz.waiting_answer)      # переводим в состояние
-    await callback.message.answer(f"Вопрос 1: {QUESTIONS[0]['q']}")
-
-@router.callback_query(F.data == 'restart_start')
-async def restart(callback: CallbackQuery, state: FSMContext):
-    await callback.answer('Начинаем игру!', show_alert=True)
-    await state.update_data(index=0, score=0)   
-    await state.set_state(Quiz.waiting_answer)      
-    await callback.message.answer(f"Вопрос 1: {QUESTIONS[0]['q']}")
+    await callback.message.answer(f"Вопрос 1: {questions[0]["question_text"]}")
 
 @router.message(Quiz.waiting_answer)
 async def handle_answer(message: Message, state: FSMContext):
     data = await state.get_data()
     index = data["index"]
     score = data["score"]
+    questions = data["questions"]
+    user = get_user(telegram_id=message.from_user.id)
+    q = questions[index] 
 
-    if message.text.lower() == QUESTIONS[index]['a']:
+    is_correct = message.text.lower() == q['correct_answer']
+    save_result(
+        user_id=user["id"],
+        question_id=q["id"],
+        is_correct=is_correct
+    )
+
+    if is_correct:
         score += 1
         await message.answer("Правильно! +1")
 
     else:
-        await message.answer(f"Неверно. Правильный ответ: {QUESTIONS[index]['a']}")
+        await message.answer(f"Неверно. Правильный ответ: {q["correct_answer"]}")
 
     index += 1
-    if index >= len(QUESTIONS):
-        await message.answer(f"Конец! Счет: {score}/{len(QUESTIONS)}",
+    if index >= len(questions):
+        await message.answer(f"Конец! Счет: {score}/{len(questions)}",
                              reply_markup=inline_buttons2)
         await state.clear()
 
     else:
         await state.update_data(index=index, score=score)
-        await message.answer(f"Вопрос {index + 1}: {QUESTIONS[index]['q']}")
+        await message.answer(f"Вопрос {index + 1}: {questions[index]["question_text"]}")
+
+@router.callback_query(F.data == 'restart_start')
+async def restart(callback: CallbackQuery, state: FSMContext):
+    questions = get_all_questions()
+    if not questions:
+        await callback.answer('Вопросов в базе данных нету!')
+    await callback.answer('Начинаем игру!', show_alert=True)
+    await state.update_data(index=0, score=0)   
+    await state.set_state(Quiz.waiting_answer)      
+    await callback.message.answer(f"Вопрос 1: {questions[0]["question_text"]}")
 
 # ---------------------------------------------------------homework-5
 @router.callback_query(F.data == 'delete_user')

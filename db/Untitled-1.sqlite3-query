@@ -1,0 +1,9 @@
+-- database: ./quiz.db
+SELECT 
+    users.username,
+    questions.question_text,
+    questions.correct_answer,
+    results.is_correct
+FROM results
+JOIN users ON results.user_id = users.id
+JOIN questions ON results.question_id = questions.id
