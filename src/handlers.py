@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from db.users import get_user,create_user, update_user, delete_user
 from db.results import save_result
 from db.questions import get_all_questions
+from db.stats import get_hardest,get_history,get_top
 
 from src.state import Quiz , UpdateUser
 from src.keyboards import inline_buttons,inline_buttons2,update_delete_button_inline
@@ -129,6 +130,42 @@ async def update_username_handler(message: Message, state: FSMContext):
     await state.clear()
     await message.answer('Имя пользователя успешно изменено!\n'
                          f'Теперь ваша имя - {message.text}!')
+
+@router.message(Command("history"))
+async def cmd_history(message: Message):
+    history = get_history(telegram_id=message.from_user.id)
+    if not history:
+        await message.answer('Ответов в базе пуст!')
+    text = "Последие ответы:\n\n"
+    for i , row in enumerate(history, 1):
+        mark = 'Верно' if row["is_correct"] else 'Неверно'
+        text += f'{i}. {mark} - {row["question_text"]}\n'
+    await message.answer(text)
+
+@router.message(Command("top"))
+async def get_rating_handler(message: Message):
+    rating = get_top()
+
+    if not rating:
+        await message.answer("Рейтинг пока пуст.")
+        return
+    text = " ТОП-3 игроков\n\n"
+    for i, p in enumerate(rating, start=1):
+        text += f"{i}. {p["username"]} - {p["correct"]}/{p["total"]}\n"
+    await message.answer(text)
+
+@router.message(Command('hardest'))
+async def cmd_hardest(message: Message):
+    g = get_hardest()
+    if not g:
+        await message.answer('Вопросов в базе нету!')
+        return
+    await message.answer(
+
+        f'Самый сложный вопрос:\n'
+        f'{g["question_text"]}\n'
+        f'Правильных: {g['succes_rate']}'
+    )
 
 @router.message()
 async def echo(message: Message):
